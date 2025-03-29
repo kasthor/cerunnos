@@ -24,9 +24,9 @@ pub struct KlineDetail {
     #[serde(rename = "i")]
     pub interval: String,
     #[serde(rename = "f")]
-    pub fist_trade_id: u32,
+    pub fist_trade_id: u64,
     #[serde(rename = "L")]
-    pub last_trade_id: u32,
+    pub last_trade_id: u64,
     #[serde(rename = "o")]
     pub open: String,
     #[serde(rename = "c")]
@@ -38,7 +38,7 @@ pub struct KlineDetail {
     #[serde(rename = "v")]
     pub volume: String,
     #[serde(rename = "n")]
-    pub trade_count: u32,
+    pub trade_count: u64,
     #[serde(rename = "x")]
     pub closed: bool,
     #[serde(rename = "q")]
