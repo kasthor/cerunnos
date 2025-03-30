@@ -7,6 +7,8 @@ use processor::Processor;
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let processor = Processor::new();
 
     processor.start().await
