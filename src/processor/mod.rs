@@ -11,16 +11,27 @@ impl Processor {
         Self {}
     }
     pub async fn start(self) {
-        let mut binance = Binance::new().await;
+        let mut binance = Binance::new("BTCUSDT".to_string(), "1m".to_string()).await;
         let mut history = History::new();
-        let ema = EMA::new("ema".to_string(), 5);
+        let ema = EMA::new("ema".to_string(), 20);
         history.add_calculator(Box::new(ema));
+
+        match binance.fetch_historical_klines().await {
+            Ok(klines) => {
+                println!("Loaded {} historical klines", klines.len());
+                for kline in klines {
+                    history.insert(kline);
+                }
+            }
+            Err(e) => {
+                println!("{}", e);
+            }
+        }
 
         while let Some(event) = binance.next().await {
             match event {
                 Ok(kline) => {
                     history.insert(Kline::from(kline));
-                    println!("{:?}", history);
                 }
                 Err(e) => eprintln!("Error: {:?}", e),
             }

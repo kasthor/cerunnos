@@ -32,7 +32,11 @@ impl Binance {
             Self::manage_connection(url, tx).await;
         });
 
-        Binance { receiver: rx, symbol, interval}
+        Binance {
+            receiver: rx,
+            symbol,
+            interval,
+        }
     }
     async fn ping_handler() -> (task::JoinHandle<()>, mpsc::Receiver<()>) {
         let (tx, rx) = mpsc::channel(1);
