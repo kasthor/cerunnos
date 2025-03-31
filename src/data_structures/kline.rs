@@ -30,22 +30,31 @@ impl Default for Kline {
 #[cfg(test)]
 pub(crate) mod helpers {
     use super::Kline;
-    use chrono::{DateTime, Utc};
+    use chrono::{DateTime, TimeDelta, Utc};
 
     pub(crate) fn generate_klines(start_time: DateTime<Utc>, count: usize) -> Vec<Kline> {
-        generate_klines_with_interval(start_time, count, 1)
+        let prices: Vec<f64> = (0..count).map(|_| 100.0).collect();
+        generate_klines_with_interval(start_time, &prices, 1)
+    }
+
+    pub(crate) fn generate_klines_with_prices(prices: &[f64]) -> Vec<Kline> {
+        let start_time = Utc::now() - TimeDelta::try_minutes((prices.len()) as i64).unwrap();
+        generate_klines_with_interval(start_time, prices, 1000)
     }
 
     pub(crate) fn generate_klines_with_interval(
         start_time: DateTime<Utc>,
-        count: usize,
+        prices: &[f64],
         interval_secs: i64,
     ) -> Vec<Kline> {
-        (0..count)
-            .map(|i| {
+        (prices)
+            .iter()
+            .enumerate()
+            .map(|(i, price)| {
                 let time = start_time + chrono::Duration::seconds(i as i64 * interval_secs);
                 Kline {
                     time,
+                    close: *price,
                     ..Default::default()
                 }
             })

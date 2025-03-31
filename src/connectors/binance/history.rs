@@ -6,6 +6,8 @@ use serde::{de::IgnoredAny, Deserialize};
 
 use crate::data_structures::kline::Kline;
 
+use super::Binance;
+
 #[derive(Deserialize, Debug)]
 struct BinanceHistoryKLine(
     i64,        // Open time
@@ -36,7 +38,7 @@ impl From<BinanceHistoryKLine> for Kline {
     }
 }
 
-impl super::Binance {
+impl Binance {
     pub async fn fetch_historical_klines(&self) -> Result<Vec<Kline>, Box<dyn Error>> {
         let client = Client::new();
         let url = format!(

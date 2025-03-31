@@ -61,6 +61,16 @@ impl History {
             .map(|(_, kline)| kline.clone())
             .collect()
     }
+
+    pub fn get_indicator_values(&self, indicator: &str, count: usize) -> Vec<Vec<f64>> {
+        self.indicators
+            .iter()
+            .rev()
+            .take(count)
+            .rev()
+            .filter_map(|(_, indicators)| indicators.get(indicator).cloned())
+            .collect()
+    }
 }
 
 #[cfg(test)]

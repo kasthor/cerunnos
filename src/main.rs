@@ -2,6 +2,7 @@ mod connectors;
 mod data_structures;
 mod indicators;
 mod processor;
+mod strategies;
 
 use processor::Processor;
 
