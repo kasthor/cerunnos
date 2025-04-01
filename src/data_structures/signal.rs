@@ -2,7 +2,6 @@ use core::fmt;
 use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
-use env_logger::fmt::Formatter;
 
 #[derive(PartialEq, Debug)]
 pub enum SignalType {

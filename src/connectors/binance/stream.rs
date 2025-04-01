@@ -1,17 +1,20 @@
 use futures_util::stream::Stream;
 
-use super::{message::KlineEvent, Binance};
+use crate::data_structures::kline::Kline;
+
+use super::Binance;
+use super::Result;
 use std::{pin::Pin, task::Poll};
 
 impl Stream for Binance {
-    type Item = Result<KlineEvent, Box<dyn std::error::Error>>;
+    type Item = Result<Kline>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Option<Self::Item>> {
         match self.receiver.poll_recv(cx) {
             Poll::Ready(Some(item)) => {
                 let item = match item {
-                    Ok(event) => Ok(event),
-                    Err(e) => Err(e as Box<dyn std::error::Error>),
+                    Ok(event) => Ok(Kline::from(event)),
+                    Err(e) => Err(e as Box<dyn std::error::Error + Send + Sync>),
                 };
 
                 Poll::Ready(Some(item))

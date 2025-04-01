@@ -19,17 +19,11 @@ impl PriceCrossOverStrategy {
             return None;
         }
 
-        println!("{:?}", price_series);
         let current_price = price_series[price_series.len() - 1];
         let previous_price = price_series[price_series.len() - 2];
 
         let current_indicator = indicator_series[indicator_series.len() - 1].last()?;
         let previous_indicator = indicator_series[indicator_series.len() - 2].last()?;
-
-        println!(
-            "{}, {}, {} ,{}",
-            previous_price, *previous_indicator, current_price, *current_indicator
-        );
 
         if previous_price <= *previous_indicator && current_price > *current_indicator {
             Some(SignalType::Buy)

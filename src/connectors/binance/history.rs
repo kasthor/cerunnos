@@ -1,12 +1,12 @@
-use std::error::Error;
-
 use chrono::{DateTime, Utc};
+use log::trace;
 use reqwest::Client;
 use serde::{de::IgnoredAny, Deserialize};
 
 use crate::data_structures::kline::Kline;
 
 use super::Binance;
+use super::Result;
 
 #[derive(Deserialize, Debug)]
 struct BinanceHistoryKLine(
@@ -39,7 +39,7 @@ impl From<BinanceHistoryKLine> for Kline {
 }
 
 impl Binance {
-    pub async fn fetch_historical_klines(&self) -> Result<Vec<Kline>, Box<dyn Error>> {
+    pub async fn fetch_historical_klines(&self) -> Result<Vec<Kline>> {
         let client = Client::new();
         let url = format!(
             "https://api.binance.com/api/v3/klines?symbol={}&interval={}",
@@ -61,7 +61,7 @@ impl Binance {
             Err(e) => return Err(Box::new(e)),
         };
 
-        println!("{}", binance_klines.len());
+        trace!("Loaded {} historical klines", binance_klines.len());
 
         let klines = binance_klines
             .into_iter()

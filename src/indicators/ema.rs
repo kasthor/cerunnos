@@ -67,7 +67,6 @@ mod tests {
         let result = ema.calculate(&history);
         let expected = vec![100.0, 102.5, 106.25];
 
-        println!("result: {:?}", result);
         assert_eq!(result, expected);
     }
 
@@ -88,7 +87,6 @@ mod tests {
         let result = ema.calculate(&history);
         let expected = vec![100.0, 102.5];
 
-        println!("result: {:?}", result);
         assert_eq!(result, expected);
     }
 }
