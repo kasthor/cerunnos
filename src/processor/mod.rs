@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::data_structures::history::History;
-use crate::data_structures::signal::Signal;
 use crate::indicators::ema::EMA;
+use crate::signal_processors::SignalProcessor;
 use crate::source::Source;
 use crate::strategies::crossover::PriceCrossOverStrategy;
 use crate::strategies::Strategy;
@@ -13,10 +11,11 @@ pub struct Processor {
     history: History,
     strategies: Vec<Box<dyn Strategy>>,
     source: Box<dyn Source>,
+    signal_processors: Vec<Box<dyn SignalProcessor>>,
 }
 
 impl Processor {
-    pub fn new(source: Box<dyn Source>) -> Self {
+    pub fn new(source: Box<dyn Source>, signal_processors: Vec<Box<dyn SignalProcessor>>) -> Self {
         let mut strategies = Vec::new();
         let mut history = History::new();
 
@@ -31,6 +30,7 @@ impl Processor {
             source,
             history,
             strategies,
+            signal_processors,
         }
     }
 
@@ -57,16 +57,15 @@ impl Processor {
         }
     }
 
-    pub async fn apply_strategies(&self) -> Vec<Signal> {
-        let mut result: Vec<Signal> = Vec::new();
-
+    pub async fn apply_strategies(&mut self) {
         for strategy in &self.strategies {
-            let mut signals = strategy.generate_signals(&self.history);
+            let signals = strategy.generate_signals(&self.history);
 
-            trace!("{} signals: {:?}", strategy.name(), signals);
-            result.append(&mut signals);
+            for signal in signals {
+                for processor in &mut self.signal_processors {
+                    processor.process_signal(&signal);
+                }
+            }
         }
-
-        result
     }
 }

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum SignalType {
     Hold,
     Sell,
@@ -19,7 +19,7 @@ impl fmt::Display for SignalType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Signal {
     pub time: DateTime<Utc>,
     pub symbol: String,
