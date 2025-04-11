@@ -8,7 +8,10 @@ use tokio::{sync::mpsc, task};
 use log::{error, trace};
 use message::KlineEvent;
 use std::{error::Error, future::Future, pin::Pin, time::Duration};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{protocol::Message, Bytes},
+};
 use url::Url;
 
 use futures_util::{SinkExt, StreamExt};
@@ -41,9 +44,7 @@ impl Source for Binance {
         &self.interval
     }
 
-    fn fetch_history(
-        &self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<Kline>>> + Send + '_>> {
+    fn fetch_history(&self) -> Pin<Box<dyn Future<Output = Result<Vec<Kline>>> + Send + '_>> {
         Box::pin(async move { self.fetch_historical_klines().await })
     }
 }
@@ -102,7 +103,7 @@ impl Binance {
     async fn manage_connection(url: Url, tx: mpsc::Sender<Result<KlineEvent>>) {
         loop {
             trace!("connecting to binance websocket");
-            match connect_async(&url).await {
+            match connect_async(&url.to_string()).await {
                 Ok((mut ws_stream, _)) => {
                     trace!("connected to binance websocket");
                     let (ping_task, mut ping_rx) = Binance::ping_handler().await;
@@ -110,7 +111,7 @@ impl Binance {
                     loop {
                         tokio::select! {
                             _ = ping_rx.recv() => {
-                                if let Err(e) = ws_stream.send(Message::Ping(vec![])).await {
+                                if let Err(e) = ws_stream.send(Message::Ping(Bytes::new())).await {
                                     error!("error sending ping: {:?}", e )
                                 }
                             }
@@ -118,7 +119,7 @@ impl Binance {
                             msg = ws_stream.next() => {
                                 match msg {
                                     Some(Ok(Message::Text(text))) => {
-                                        if !Binance::handle_text_message(text, &tx).await {
+                                        if !Binance::handle_text_message(text.to_string(), &tx).await {
                                             break
                                         }
                                     }
