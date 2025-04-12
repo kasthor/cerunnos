@@ -1,5 +1,5 @@
-pub mod logging;
 pub mod backtest;
+pub mod logging;
 
 use crate::data_structures::signal::Signal;
 

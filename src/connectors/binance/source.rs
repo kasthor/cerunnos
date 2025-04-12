@@ -1,7 +1,6 @@
-use std::{error::Error, future::Future, pin::Pin};
+use std::{future::Future, pin::Pin};
 
-use tokio::sync::mpsc;
-use url::Url;
+use futures::Stream;
 
 use crate::{
     data_structures::kline::Kline,
@@ -27,39 +26,7 @@ impl Source for Binance {
         Box::pin(async move { self.fetch_historical_klines().await })
     }
 
-    fn is_connected(&self) -> bool {
-        self.receiver.is_some()
-    }
-
-    fn connect(&mut self) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>> {
-        Box::pin(async move {
-            if self.is_connected() {
-                return Err("already connected".into());
-            }
-
-            let url = Url::parse("wss://fstream.binance.com/ws/btcusdt@kline_1m")?;
-
-            let (tx, rx) = mpsc::channel(100);
-
-            self.receiver = Some(rx);
-
-            tokio::spawn(async move {
-                Self::manage_connection(url, tx).await;
-            });
-
-            Ok(())
-        })
-    }
-
-    fn disconnect(&mut self) -> Pin<Box<dyn Future<Output = Result<()>> + Send + '_>> {
-        Box::pin(async move {
-            if !self.is_connected() {
-                return Err("not connected".into());
-            }
-
-            self.receiver = None;
-
-            Ok(())
-        })
+    fn fetch_live(&self) -> Pin<Box<dyn Stream<Item = Result<Kline>> + Send>> {
+        Box::pin(super::stream::Stream::new())
     }
 }

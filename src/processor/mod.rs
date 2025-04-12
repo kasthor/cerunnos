@@ -1,10 +1,11 @@
 use crate::data_structures::history::History;
+use crate::data_structures::kline::Kline;
 use crate::indicators::ema::EMA;
 use crate::signal_processors::SignalProcessor;
 use crate::source::{Result, Source};
 use crate::strategies::crossover::PriceCrossOverStrategy;
 use crate::strategies::Strategy;
-use futures_util::StreamExt;
+use futures::stream::{self, StreamExt};
 use log::error;
 
 pub struct Processor {
@@ -34,33 +35,39 @@ impl Processor {
         }
     }
 
-    pub async fn start(&mut self) -> Result<()> {
-        match self.source.fetch_history().await {
-            Ok(klines) => {
-                for kline in klines {
-                    self.history.insert(kline);
-                }
-            }
-            Err(e) => {
-                error!("{}", e);
-            }
-        }
+    pub async fn consume_klines<T>(&mut self, stream: T, apply_strategies: bool) -> Result<()>
+    where
+        T: StreamExt<Item = Result<Kline>>,
+    {
+        tokio::pin!(stream);
 
-        if !self.source.is_connected() {
-            self.source.connect().await?
-        }
-
-        while let Some(event) = self.source.next().await {
+        while let Some(event) = stream.next().await {
             match event {
                 Ok(kline) => {
                     self.history.insert(kline);
-                    self.apply_strategies().await;
+                    if apply_strategies {
+                        self.apply_strategies().await
+                    }
                 }
-                Err(e) => eprintln!("Error: {:?}", e),
+                Err(e) => error!("while processing kline: {:?}", e),
             }
         }
 
         Ok(())
+    }
+
+    pub async fn start(&mut self) -> Result<()> {
+        match self.source.fetch_history().await {
+            Ok(klines) => {
+                let historical_data = stream::iter(klines.into_iter().map(Ok));
+                self.consume_klines(historical_data, false).await?;
+            }
+            Err(e) => error!("{}", e),
+        }
+
+        let stream = self.source.fetch_live();
+
+        self.consume_klines(stream, true).await
     }
 
     pub async fn apply_strategies(&mut self) {

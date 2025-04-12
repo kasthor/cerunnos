@@ -1,11 +1,11 @@
 mod connectors;
 mod data_structures;
+mod engines;
 mod indicators;
 mod processor;
 mod signal_processors;
 mod source;
 mod strategies;
-mod engines;
 
 use connectors::binance::Binance;
 use processor::Processor;
