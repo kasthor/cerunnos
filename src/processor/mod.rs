@@ -35,6 +35,20 @@ impl Processor {
         }
     }
 
+    pub async fn start(&mut self) -> Result<()> {
+        match self.source.fetch_history().await {
+            Ok(klines) => {
+                let historical_data = stream::iter(klines.into_iter().map(Ok));
+                self.consume_klines(historical_data, false).await?;
+            }
+            Err(e) => error!("{}", e),
+        }
+
+        let stream = self.source.fetch_live();
+
+        self.consume_klines(stream, true).await
+    }
+
     pub async fn consume_klines<T>(&mut self, stream: T, apply_strategies: bool) -> Result<()>
     where
         T: StreamExt<Item = Result<Kline>>,
@@ -54,20 +68,6 @@ impl Processor {
         }
 
         Ok(())
-    }
-
-    pub async fn start(&mut self) -> Result<()> {
-        match self.source.fetch_history().await {
-            Ok(klines) => {
-                let historical_data = stream::iter(klines.into_iter().map(Ok));
-                self.consume_klines(historical_data, false).await?;
-            }
-            Err(e) => error!("{}", e),
-        }
-
-        let stream = self.source.fetch_live();
-
-        self.consume_klines(stream, true).await
     }
 
     pub async fn apply_strategies(&mut self) {

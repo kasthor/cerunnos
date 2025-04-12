@@ -9,7 +9,7 @@ use log::trace;
 use tokio::{sync::mpsc, task};
 
 use futures_util::{SinkExt, StreamExt};
-use std::{error::Error, time::Duration};
+use std::time::Duration;
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{protocol::Message, Bytes},
