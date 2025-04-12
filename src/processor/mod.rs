@@ -1,11 +1,11 @@
 use crate::data_structures::history::History;
 use crate::indicators::ema::EMA;
 use crate::signal_processors::SignalProcessor;
-use crate::source::Source;
+use crate::source::{Result, Source};
 use crate::strategies::crossover::PriceCrossOverStrategy;
 use crate::strategies::Strategy;
 use futures_util::StreamExt;
-use log::{error, trace};
+use log::error;
 
 pub struct Processor {
     history: History,
@@ -34,7 +34,7 @@ impl Processor {
         }
     }
 
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> Result<()> {
         match self.source.fetch_history().await {
             Ok(klines) => {
                 for kline in klines {
@@ -46,6 +46,10 @@ impl Processor {
             }
         }
 
+        if !self.source.is_connected() {
+            self.source.connect().await?
+        }
+
         while let Some(event) = self.source.next().await {
             match event {
                 Ok(kline) => {
@@ -55,6 +59,8 @@ impl Processor {
                 Err(e) => eprintln!("Error: {:?}", e),
             }
         }
+
+        Ok(())
     }
 
     pub async fn apply_strategies(&mut self) {

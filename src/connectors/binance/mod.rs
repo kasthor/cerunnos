@@ -1,13 +1,14 @@
 mod history;
 mod kline;
 mod message;
+mod source;
 pub mod stream;
 
 use tokio::{sync::mpsc, task};
 
 use log::{error, trace};
 use message::KlineEvent;
-use std::{error::Error, future::Future, pin::Pin, time::Duration};
+use std::{error::Error, time::Duration};
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{protocol::Message, Bytes},
@@ -15,8 +16,6 @@ use tokio_tungstenite::{
 use url::Url;
 
 use futures_util::{SinkExt, StreamExt};
-
-use crate::{data_structures::kline::Kline, source::Source};
 
 const RECONNECT_WAIT: u64 = 5;
 const PING_INTERVAL_IN_SECONDS: u64 = 60 * 10;
@@ -26,46 +25,23 @@ pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync + 'stati
 #[derive(Debug)]
 pub struct Binance {
     name: String,
-    receiver: mpsc::Receiver<Result<KlineEvent>>,
+    receiver: Option<mpsc::Receiver<Result<KlineEvent>>>,
     symbol: String,
     interval: String,
-}
-
-impl Source for Binance {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn symbol(&self) -> &str {
-        &self.symbol
-    }
-
-    fn timeframe(&self) -> &str {
-        &self.interval
-    }
-
-    fn fetch_history(&self) -> Pin<Box<dyn Future<Output = Result<Vec<Kline>>> + Send + '_>> {
-        Box::pin(async move { self.fetch_historical_klines().await })
-    }
 }
 
 impl Binance {
     pub async fn new(symbol: String, interval: String) -> Self {
         let name = "binance".to_string();
-        let url = Url::parse("wss://fstream.binance.com/ws/btcusdt@kline_1m").unwrap();
-        let (tx, rx) = mpsc::channel(100);
-
-        tokio::spawn(async move {
-            Self::manage_connection(url, tx).await;
-        });
 
         Binance {
             name,
-            receiver: rx,
+            receiver: None,
             symbol,
             interval,
         }
     }
+
     async fn ping_handler() -> (task::JoinHandle<()>, mpsc::Receiver<()>) {
         let (tx, rx) = mpsc::channel(1);
 

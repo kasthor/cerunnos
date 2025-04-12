@@ -24,5 +24,5 @@ async fn main() {
     signal_processors.push(backtest_signal_processor);
     let mut processor = Processor::new(source, signal_processors);
 
-    processor.start().await
+    processor.start().await.expect("Processor failed")
 }
