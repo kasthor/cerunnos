@@ -15,6 +15,11 @@ pub struct Processor {
     signal_processors: Vec<Box<dyn SignalProcessor>>,
 }
 
+enum StrategyOption {
+    Apply,
+    Skip,
+}
+
 impl Processor {
     pub fn new(source: Box<dyn Source>, signal_processors: Vec<Box<dyn SignalProcessor>>) -> Self {
         let mut strategies = Vec::new();
@@ -39,17 +44,17 @@ impl Processor {
         match self.source.fetch_history().await {
             Ok(klines) => {
                 let historical_data = stream::iter(klines.into_iter().map(Ok));
-                self.consume_klines(historical_data, false).await?;
+                self.consume_klines(historical_data, StrategyOption::Skip).await?;
             }
             Err(e) => error!("{}", e),
         }
 
         let stream = self.source.fetch_live();
 
-        self.consume_klines(stream, true).await
+        self.consume_klines(stream, StrategyOption::Apply).await
     }
 
-    pub async fn consume_klines<T>(&mut self, stream: T, apply_strategies: bool) -> Result<()>
+    async fn consume_klines<T>(&mut self, stream: T, strategy: StrategyOption) -> Result<()>
     where
         T: StreamExt<Item = Result<Kline>>,
     {
@@ -59,7 +64,7 @@ impl Processor {
             match event {
                 Ok(kline) => {
                     self.history.insert(kline);
-                    if apply_strategies {
+                    if let StrategyOption::Apply = strategy {
                         self.apply_strategies().await
                     }
                 }
@@ -70,7 +75,7 @@ impl Processor {
         Ok(())
     }
 
-    pub async fn apply_strategies(&mut self) {
+    async fn apply_strategies(&mut self) {
         for strategy in &self.strategies {
             let signals = strategy.generate_signals(&self.history);
 
