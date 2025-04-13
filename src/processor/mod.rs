@@ -20,6 +20,11 @@ enum StrategyOption {
     Skip,
 }
 
+pub enum ProcessorMode {
+    Backtest,
+    Live,
+}
+
 impl Processor {
     pub fn new(source: Box<dyn Source>, signal_processors: Vec<Box<dyn SignalProcessor>>) -> Self {
         let mut strategies = Vec::new();
@@ -40,18 +45,26 @@ impl Processor {
         }
     }
 
-    pub async fn start(&mut self) -> Result<()> {
+    pub async fn start(&mut self, mode: ProcessorMode) -> Result<()> {
         match self.source.fetch_history().await {
             Ok(klines) => {
+                let strategy_option = match mode {
+                    ProcessorMode::Live => StrategyOption::Skip,
+                    ProcessorMode::Backtest => StrategyOption::Apply,
+                };
                 let historical_data = stream::iter(klines.into_iter().map(Ok));
-                self.consume_klines(historical_data, StrategyOption::Skip).await?;
+                self.consume_klines(historical_data, strategy_option).await?;
             }
             Err(e) => error!("{}", e),
         }
 
-        let stream = self.source.fetch_live();
-
-        self.consume_klines(stream, StrategyOption::Apply).await
+        match mode {
+            ProcessorMode::Live => {
+                let stream = self.source.fetch_live();
+                self.consume_klines(stream, StrategyOption::Apply).await
+            }
+            ProcessorMode::Backtest => Ok(()),
+        }
     }
 
     async fn consume_klines<T>(&mut self, stream: T, strategy: StrategyOption) -> Result<()>

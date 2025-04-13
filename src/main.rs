@@ -8,7 +8,7 @@ mod source;
 mod strategies;
 
 use connectors::binance::Binance;
-use processor::Processor;
+use processor::{Processor, ProcessorMode};
 use signal_processors::SignalProcessor;
 
 #[tokio::main]
@@ -24,5 +24,5 @@ async fn main() {
     signal_processors.push(backtest_signal_processor);
     let mut processor = Processor::new(source, signal_processors);
 
-    processor.start().await.expect("Processor failed")
+    processor.start(ProcessorMode::Live).await.expect("Processor failed")
 }
