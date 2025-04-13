@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use log::trace;
 
 use crate::data_structures::signal::Signal;
@@ -22,5 +24,12 @@ impl SignalProcessor for Logging {
             }
         }
         self.last_signal = Some(signal.clone());
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

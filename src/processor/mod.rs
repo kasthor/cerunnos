@@ -1,6 +1,7 @@
 use crate::data_structures::history::History;
 use crate::data_structures::kline::Kline;
 use crate::indicators::ema::EMA;
+use crate::signal_processors::backtest::Backtest;
 use crate::signal_processors::SignalProcessor;
 use crate::source::{Result, Source};
 use crate::strategies::crossover::PriceCrossOverStrategy;
@@ -63,7 +64,13 @@ impl Processor {
                 let stream = self.source.fetch_live();
                 self.consume_klines(stream, StrategyOption::Apply).await
             }
-            ProcessorMode::Backtest => Ok(()),
+            ProcessorMode::Backtest => {
+                if let Some(backtest) = Self::get_signal_processor_by_type::<Backtest>(&mut self.signal_processors) {
+                    backtest.get_performance_metrics().print_summary();
+                }
+
+                Ok(())
+            }
         }
     }
 
@@ -98,5 +105,15 @@ impl Processor {
                 }
             }
         }
+    }
+
+    fn get_signal_processor_by_type<T: 'static>(processors: &mut [Box<dyn SignalProcessor>]) -> Option<&T> {
+        for processor in processors {
+            if let Some(typed_processor) = processor.as_any().downcast_ref::<T>() {
+                return Some(typed_processor);
+            }
+        }
+
+        None
     }
 }

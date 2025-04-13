@@ -1,5 +1,5 @@
 pub mod metrics;
-use std::collections::HashMap;
+use std::{any::Any, collections::HashMap};
 
 use log::info;
 
@@ -80,5 +80,13 @@ impl SignalProcessor for Trading {
         }
 
         self.last_signal = Some(signal.clone());
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
