@@ -1,10 +1,13 @@
 pub mod metrics;
 use std::{any::Any, collections::HashMap};
 
+use metrics::Metrics;
+
 use log::info;
 
 use crate::{
     data_structures::{
+        performance_metrics::PerformanceMetrics,
         position::Position,
         signal::{Signal, SignalType},
         trade::Trade,
@@ -13,25 +16,25 @@ use crate::{
 };
 
 pub struct Trading {
-    initial_balance: f64,
     balance: f64,
     risk_per_trade: f64,
     positions: HashMap<String, Position>,
-    completed_trades: Vec<Trade>,
     last_signal: Option<Signal>,
     fees: f64,
+
+    metrics: Metrics,
 }
 
 impl Trading {
-    pub fn new(initial_balance: f64, risk_per_trade: f64, fees: f64) -> Self {
+    pub fn new(balance: f64, risk_per_trade: f64, fees: f64) -> Self {
         Self {
-            initial_balance,
-            balance: initial_balance,
+            balance,
             risk_per_trade,
-            completed_trades: Vec::new(),
             positions: HashMap::new(),
             last_signal: None,
             fees,
+
+            metrics: Metrics::new(balance),
         }
     }
 
@@ -50,6 +53,8 @@ impl Trading {
         let fee_amount = position_size * self.fees;
         self.balance -= position_size - fee_amount;
 
+        self.metrics.update_equity_curve(signal.time, self.balance);
+
         let position = Position::from_signal(signal, amount);
         self.positions.insert(position.symbol.clone(), position);
     }
@@ -61,13 +66,18 @@ impl Trading {
             let fee_amount = trade.position_value() * self.fees;
             self.balance += trade.position_value() - fee_amount;
 
-            self.completed_trades.push(trade.clone());
+            self.metrics.add_trade(trade.clone());
+            self.metrics.update_equity_curve(signal.time, self.balance);
 
             info!(
                 "SELL: {} @ {:.2} | Profit Loss: {:.4} ({:.2}%) | Balance: {:2}",
                 trade.symbol, trade.exit_price, trade.profit_loss, trade.profit_loss_percent, self.balance
             )
         }
+    }
+
+    pub fn get_performance_metrics(&self) -> PerformanceMetrics {
+        self.metrics.get_performance_metrics()
     }
 }
 
