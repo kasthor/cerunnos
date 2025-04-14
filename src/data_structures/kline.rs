@@ -54,6 +54,7 @@ pub(crate) mod helpers {
                 let time = start_time + chrono::Duration::seconds(i as i64 * interval_secs);
                 Kline {
                     time,
+                    open: *price,
                     close: *price,
                     ..Default::default()
                 }

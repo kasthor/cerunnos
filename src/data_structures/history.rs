@@ -6,6 +6,7 @@ use crate::indicators::Indicator;
 
 use super::kline::Kline;
 
+#[derive(Default)]
 pub struct History {
     data: BTreeMap<DateTime<Utc>, Kline>,
     calculators: HashMap<String, Box<dyn Indicator>>,
@@ -27,6 +28,15 @@ impl History {
             data: BTreeMap::new(),
             calculators: HashMap::new(),
             indicators: BTreeMap::new(),
+        }
+    }
+
+    pub fn with_klines(klines: Vec<Kline>) -> Self {
+        let data = BTreeMap::from_iter(klines.into_iter().map(|k| (k.time, k)));
+
+        History {
+            data,
+            ..Default::default()
         }
     }
 

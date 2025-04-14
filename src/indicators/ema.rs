@@ -44,7 +44,7 @@ mod tests {
     use chrono::{TimeDelta, Utc};
 
     use crate::{
-        data_structures::{history::History, kline::Kline},
+        data_structures::{history::History, kline::{helpers::generate_klines_with_prices, Kline}},
         indicators::Indicator,
     };
 
@@ -52,16 +52,8 @@ mod tests {
 
     #[test]
     fn test_ema_calculation_with_exact_dataset() {
-        let mut history = History::new();
         let prices = vec![100.0, 105.0, 110.0];
-
-        for (i, &close) in prices.iter().enumerate() {
-            history.insert(Kline {
-                time: (Utc::now() - TimeDelta::try_minutes((prices.len() - i) as i64).unwrap()),
-                close,
-                ..Default::default()
-            })
-        }
+        let history = History::with_klines(generate_klines_with_prices(&prices));
 
         let ema = EMA::new("ema".to_string(), 3);
         let result = ema.calculate(&history);
@@ -72,16 +64,8 @@ mod tests {
 
     #[test]
     fn test_ema_calculation_with_fewer_items() {
-        let mut history = History::new();
         let prices = vec![100.0, 105.0];
-
-        for (i, &close) in prices.iter().enumerate() {
-            history.insert(Kline {
-                time: (Utc::now() - TimeDelta::try_minutes((prices.len() - i) as i64).unwrap()),
-                close,
-                ..Default::default()
-            })
-        }
+        let history = History::with_klines(generate_klines_with_prices(&prices));
 
         let ema = EMA::new("ema".to_string(), 3);
         let result = ema.calculate(&history);
