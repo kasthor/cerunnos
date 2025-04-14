@@ -3,6 +3,8 @@ use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 
+use super::kline::Kline;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum SignalType {
     Hold,
@@ -45,6 +47,16 @@ impl Signal {
             symbol,
             signal_type,
             price,
+            source,
+        }
+    }
+
+    pub fn with_kline(signal_type: SignalType, source: String, kline: &Kline) -> Self {
+        Self {
+            time: kline.time,
+            symbol: kline.symbol.clone(),
+            signal_type,
+            price: kline.close,
             source,
         }
     }

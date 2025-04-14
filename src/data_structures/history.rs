@@ -32,7 +32,7 @@ impl History {
     }
 
     pub fn with_klines(klines: Vec<Kline>) -> Self {
-        let data = BTreeMap::from_iter(klines.into_iter().map(|k| (k.time, k)));
+        let data = BTreeMap::from_iter(klines.clone().into_iter().map(|k| (k.time, k)));
 
         History {
             data,
@@ -42,7 +42,10 @@ impl History {
 
     pub fn insert(&mut self, kline: Kline) {
         self.data.insert(kline.time, kline.clone());
+        self.calculate_indicators(&kline);
+    }
 
+    fn calculate_indicators(&mut self, kline: &Kline) {
         for (name, calculator) in &self.calculators {
             let value = calculator.calculate(&self);
             self.indicators

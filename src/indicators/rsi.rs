@@ -29,7 +29,7 @@ impl Indicator for RSI {
 
 impl RSI {
     fn calculate_rsi_values(&self, prices: &[f64]) -> Vec<f64> {
-        if prices.len() <= 1 {
+        if prices.len() <= self.period {
             return Vec::new();
         }
 
