@@ -1,4 +1,5 @@
 pub mod ema;
+pub mod rsi;
 
 use crate::data_structures::history::History;
 
