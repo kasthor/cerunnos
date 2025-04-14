@@ -14,7 +14,7 @@ impl fmt::Display for SignalType {
         match self {
             SignalType::Buy => write!(f, "buy"),
             SignalType::Sell => write!(f, "sell"),
-            SignalType::Hold => write!(f, "sell"),
+            SignalType::Hold => write!(f, "hold"),
         }
     }
 }
