@@ -4,14 +4,18 @@ use crate::data_structures::history::History;
 
 use super::Indicator;
 
-pub struct EMA {
+pub struct EMAParams {
     pub period: usize,
+}
+
+pub struct EMA {
     pub name: String,
+    pub params: EMAParams,
 }
 
 impl EMA {
-    pub fn new(name: String, period: usize) -> Self {
-        EMA { name, period }
+    pub fn new(name: String, params: EMAParams) -> Self {
+        EMA { name, params }
     }
 }
 
@@ -20,11 +24,11 @@ impl Indicator for EMA {
         &self.name
     }
     fn calculate(&self, history: &History) -> Vec<f64> {
-        let multiplier = 2.0 / (self.period as f64 + 1.0);
+        let multiplier = 2.0 / (self.params.period as f64 + 1.0);
         let mut ema_values = Vec::new();
         let mut ema_prev: Option<f64> = None;
 
-        for kline in history.last(self.period).iter() {
+        for kline in history.last(self.params.period).iter() {
             let close = kline.close;
 
             ema_prev = Some(match ema_prev {
@@ -44,7 +48,10 @@ mod tests {
     use chrono::{TimeDelta, Utc};
 
     use crate::{
-        data_structures::{history::History, kline::{helpers::generate_klines_with_prices, Kline}},
+        data_structures::{
+            history::History,
+            kline::{helpers::generate_klines_with_prices, Kline},
+        },
         indicators::Indicator,
     };
 

@@ -2,14 +2,19 @@ use crate::data_structures::history::History;
 
 use super::Indicator;
 
-pub struct RSI {
-    pub name: String,
+pub struct RSIParams {
     pub period: usize,
 }
 
+
+pub struct RSI {
+    pub name: String,
+    pub params: RSIParams,
+}
+
 impl RSI {
-    pub fn new(name: String, period: usize) -> Self {
-        Self { name, period }
+    pub fn new(name: String, params: RSIParams) -> Self {
+        Self { name, params }
     }
 }
 
@@ -19,7 +24,7 @@ impl Indicator for RSI {
     }
 
     fn calculate(&self, history: &History) -> Vec<f64> {
-        let klines = history.last(self.period + 1);
+        let klines = history.last(self.params.period + 1);
 
         let prices: Vec<f64> = klines.iter().map(|k| k.close).collect();
 
@@ -29,7 +34,7 @@ impl Indicator for RSI {
 
 impl RSI {
     fn calculate_rsi_values(&self, prices: &[f64]) -> Vec<f64> {
-        if prices.len() <= self.period {
+        if prices.len() <= self.params.period {
             return Vec::new();
         }
 
@@ -50,8 +55,8 @@ impl RSI {
             },
         );
 
-        let mut avg_gain = gains[0..self.period].iter().sum::<f64>() / self.period as f64;
-        let mut avg_loss = losses[0..self.period].iter().sum::<f64>() / self.period as f64;
+        let mut avg_gain = gains[0..self.params.period].iter().sum::<f64>() / self.params.period as f64;
+        let mut avg_loss = losses[0..self.params.period].iter().sum::<f64>() / self.params.period as f64;
 
         let rs = if avg_loss == 0.0 { 100.0 } else { avg_gain / avg_loss };
         let rsi = 100.0 - (100.0 / (1.0 + rs));
@@ -60,9 +65,9 @@ impl RSI {
 
         rsi_values.push(rsi);
 
-        for i in self.period..gains.len() {
-            avg_gain = ((avg_gain * (self.period as f64 - 1.0)) + gains[i]) / self.period as f64;
-            avg_loss = ((avg_loss * (self.period as f64 - 1.0)) + losses[i]) / self.period as f64;
+        for i in self.params.period..gains.len() {
+            avg_gain = ((avg_gain * (self.params.period as f64 - 1.0)) + gains[i]) / self.params.period as f64;
+            avg_loss = ((avg_loss * (self.params.period as f64 - 1.0)) + losses[i]) / self.params.period as f64;
 
             let rs = if avg_loss == 0.0 { 100.0 } else { avg_gain / avg_loss };
             let rsi = 100.0 - (100.0 / (1.0 + rs));

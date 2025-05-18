@@ -1,6 +1,6 @@
 use crate::data_structures::history::History;
 use crate::data_structures::kline::Kline;
-use crate::indicators::ema::EMA;
+use crate::indicators::ema::{EMAParams, EMA};
 use crate::signal_processors::backtest::Backtest;
 use crate::signal_processors::SignalProcessor;
 use crate::source::{Result, Source};
@@ -31,7 +31,7 @@ impl Processor {
         let mut strategies = Vec::new();
         let mut history = History::new();
 
-        let ema = EMA::new("ema_20".to_string(), 20);
+        let ema = EMA::new("ema_20".to_string(), EMAParams { period: 20 });
         history.add_calculator(Box::new(ema));
 
         let price_ema_crossover = PriceCrossOverStrategy::new("EMAPriceCrossOver".to_string(), "ema_20".to_string());
