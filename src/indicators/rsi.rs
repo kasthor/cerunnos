@@ -2,25 +2,30 @@ use crate::data_structures::history::History;
 
 use super::Indicator;
 
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct RSIParams {
     pub period: usize,
 }
 
+impl RSIParams {
+    pub fn name(&self) -> String {
+        format!("rsi_{}", self.period)
+    }
+}
 
 pub struct RSI {
-    pub name: String,
     pub params: RSIParams,
 }
 
 impl RSI {
-    pub fn new(name: String, params: RSIParams) -> Self {
-        Self { name, params }
+    pub fn new(params: RSIParams) -> Self {
+        Self { params }
     }
 }
 
 impl Indicator for RSI {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> String {
+        self.params.name()
     }
 
     fn calculate(&self, history: &History) -> Vec<f64> {
@@ -82,7 +87,7 @@ impl RSI {
 mod tests {
     use crate::{
         data_structures::{history::History, kline::helpers::generate_klines_with_prices},
-        indicators::Indicator,
+        indicators::{rsi::RSIParams, Indicator},
     };
 
     use super::RSI;
@@ -94,7 +99,7 @@ mod tests {
         ];
         let history = History::with_klines(generate_klines_with_prices(&prices));
 
-        let rsi = RSI::new("rsi_14".to_string(), 14);
+        let rsi = RSI::new(RSIParams { period: 14 });
         let result = rsi.calculate(&history);
 
         assert_eq!(result.len(), 1);
@@ -108,7 +113,7 @@ mod tests {
         ];
         let history = History::with_klines(generate_klines_with_prices(&prices));
 
-        let rsi = RSI::new("rsi_14".to_string(), 14);
+        let rsi = RSI::new(RSIParams { period: 14 });
         let result = rsi.calculate(&history);
 
         assert_eq!(result.len(), 1);
@@ -121,7 +126,7 @@ mod tests {
         ];
         let history = History::with_klines(generate_klines_with_prices(&prices));
 
-        let rsi = RSI::new("rsi_14".to_string(), 14);
+        let rsi = RSI::new(RSIParams { period: 14 });
         let result = rsi.calculate(&history);
 
         assert_eq!(result.len(), 1);

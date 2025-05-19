@@ -2,22 +2,22 @@ use chrono::{DateTime, Utc};
 use core::fmt;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::indicators::Indicator;
+use crate::indicators::{self, Indicator, IndicatorIdentifier};
 
 use super::kline::Kline;
 
 #[derive(Default)]
 pub struct History {
     data: BTreeMap<DateTime<Utc>, Kline>,
-    calculators: HashMap<String, Box<dyn Indicator>>,
-    indicators: BTreeMap<DateTime<Utc>, HashMap<String, Vec<f64>>>,
+    calculators: HashMap<IndicatorIdentifier, Box<dyn Indicator>>,
+    indicators: BTreeMap<DateTime<Utc>, HashMap<IndicatorIdentifier, Vec<f64>>>,
 }
 
 impl fmt::Debug for History {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("History")
             .field("data", &self.data)
-            .field("indicators", &self.indicators)
+            // .field("indicators", &self.indicators)
             .finish()
     }
 }
@@ -46,12 +46,12 @@ impl History {
     }
 
     fn calculate_indicators(&mut self, kline: &Kline) {
-        for (name, calculator) in &self.calculators {
+        for (identifier, calculator) in &self.calculators {
             let value = calculator.calculate(&self);
             self.indicators
                 .entry(kline.time)
                 .or_insert_with(HashMap::new)
-                .insert(name.clone(), value);
+                .insert(identifier.clone(), value);
         }
     }
 
@@ -59,8 +59,16 @@ impl History {
         self.data.len()
     }
 
-    pub fn add_calculator(&mut self, indicator: Box<dyn Indicator>) {
-        self.calculators.insert(indicator.name().to_string(), indicator);
+    pub fn calculator(&mut self, indicator: &IndicatorIdentifier) -> &mut Box<dyn Indicator> {
+        self.calculators
+            .entry(indicator.clone())
+            .or_insert_with(|| indicators::factory::Factory::create(&indicator))
+    }
+
+    pub fn request_calculators(&mut self, indicators: &[IndicatorIdentifier]) {
+        for indicator in indicators.iter() {
+            self.calculator(indicator);
+        }
     }
 
     pub fn last(&self, count: usize) -> Vec<Kline> {
@@ -75,7 +83,7 @@ impl History {
             .collect()
     }
 
-    pub fn get_indicator_values(&self, indicator: &str, count: usize) -> Vec<Vec<f64>> {
+    pub fn get_indicator_values(&self, indicator: &IndicatorIdentifier, count: usize) -> Vec<Vec<f64>> {
         self.indicators
             .iter()
             .rev()

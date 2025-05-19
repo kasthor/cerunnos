@@ -4,24 +4,30 @@ use crate::data_structures::history::History;
 
 use super::Indicator;
 
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct EMAParams {
     pub period: usize,
 }
 
+impl EMAParams {
+    pub fn name(&self) -> String {
+        format!("ema_{}", self.period)
+    }
+}
+
 pub struct EMA {
-    pub name: String,
     pub params: EMAParams,
 }
 
 impl EMA {
-    pub fn new(name: String, params: EMAParams) -> Self {
-        EMA { name, params }
+    pub fn new(params: EMAParams) -> Self {
+        EMA { params }
     }
 }
 
 impl Indicator for EMA {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> String {
+        self.params.name()
     }
     fn calculate(&self, history: &History) -> Vec<f64> {
         let multiplier = 2.0 / (self.params.period as f64 + 1.0);
@@ -45,14 +51,10 @@ impl Indicator for EMA {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{TimeDelta, Utc};
 
     use crate::{
-        data_structures::{
-            history::History,
-            kline::{helpers::generate_klines_with_prices, Kline},
-        },
-        indicators::Indicator,
+        data_structures::{history::History, kline::helpers::generate_klines_with_prices},
+        indicators::{ema::EMAParams, Indicator},
     };
 
     use super::EMA;
@@ -62,7 +64,7 @@ mod tests {
         let prices = vec![100.0, 105.0, 110.0];
         let history = History::with_klines(generate_klines_with_prices(&prices));
 
-        let ema = EMA::new("ema".to_string(), 3);
+        let ema = EMA::new(EMAParams { period: 3 });
         let result = ema.calculate(&history);
         let expected = vec![100.0, 102.5, 106.25];
 
@@ -74,7 +76,7 @@ mod tests {
         let prices = vec![100.0, 105.0];
         let history = History::with_klines(generate_klines_with_prices(&prices));
 
-        let ema = EMA::new("ema".to_string(), 3);
+        let ema = EMA::new(EMAParams { period: 3 });
         let result = ema.calculate(&history);
         let expected = vec![100.0, 102.5];
 

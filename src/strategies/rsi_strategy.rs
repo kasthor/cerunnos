@@ -1,27 +1,29 @@
-use crate::data_structures::{
-    history::History,
-    signal::{Signal, SignalType},
+use crate::{
+    data_structures::{
+        history::History,
+        signal::{Signal, SignalType},
+    },
+    indicators::{rsi::RSIParams, IndicatorIdentifier},
 };
 
 use super::Strategy;
 
 const LOOK_BACK: usize = 2;
 
+pub struct RSIStrategyParams {
+    pub period: usize,
+    pub oversold_level: f64,
+    pub overbought_level: f64,
+}
+
 pub struct RSIStrategy {
     name: String,
-    indicator: String,
-    overbought_level: f64,
-    oversold_level: f64,
+    params: RSIStrategyParams,
 }
 
 impl RSIStrategy {
-    pub fn new(name: String, indicator: String, overbought_level: f64, oversold_level: f64) -> Self {
-        Self {
-            name,
-            indicator,
-            overbought_level,
-            oversold_level,
-        }
+    pub fn new(name: String, params: RSIStrategyParams) -> Self {
+        Self { name, params }
     }
 
     fn detect_signal(&self, indicator_series: &[Vec<f64>]) -> Option<SignalType> {
@@ -33,16 +35,30 @@ impl RSIStrategy {
         let previous_rsi = indicator_series[indicator_series.len() - 2].last()?;
 
         match (*previous_rsi, *current_rsi) {
-            (prev, curr) if prev <= self.oversold_level && curr > self.oversold_level => Some(SignalType::Buy),
-            (prev, curr) if prev >= self.overbought_level && curr < self.overbought_level => Some(SignalType::Sell),
+            (prev, curr) if prev <= self.params.oversold_level && curr > self.params.oversold_level => {
+                Some(SignalType::Buy)
+            }
+            (prev, curr) if prev >= self.params.overbought_level && curr < self.params.overbought_level => {
+                Some(SignalType::Sell)
+            }
             _ => Some(SignalType::Hold),
         }
+    }
+
+    fn rsi_indicator_descriptor(&self) -> IndicatorIdentifier {
+        IndicatorIdentifier::RSI(RSIParams {
+            period: self.params.period,
+        })
     }
 }
 
 impl Strategy for RSIStrategy {
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn request_indicators(&self) -> Vec<IndicatorIdentifier> {
+        vec![self.rsi_indicator_descriptor()]
     }
 
     fn generate_signals(&self, history: &History) -> Vec<Signal> {
@@ -54,7 +70,7 @@ impl Strategy for RSIStrategy {
             return signals;
         }
 
-        let indicator_values = history.get_indicator_values(&self.indicator, LOOK_BACK);
+        let indicator_values = history.get_indicator_values(&self.rsi_indicator_descriptor(), LOOK_BACK);
 
         if let Some(signal_type) = self.detect_signal(&indicator_values) {
             let latest_kline = &klines[klines.len() - 1];
@@ -70,8 +86,8 @@ impl Strategy for RSIStrategy {
 mod tests {
     use crate::{
         data_structures::{history::History, kline::helpers::generate_klines_with_prices, signal::SignalType},
-        indicators::rsi::RSI,
-        strategies::Strategy,
+        indicators::rsi::{RSIParams, RSI},
+        strategies::{rsi_strategy::RSIStrategyParams, Strategy},
     };
 
     use super::RSIStrategy;
@@ -84,15 +100,22 @@ mod tests {
             // two consecutive rises intended to trigger a buy signal
             76.0, 80.0, 84.0,
         ];
+        let strategy = RSIStrategy::new(
+            "RSIOversold".to_string(),
+            RSIStrategyParams {
+                period: 14,
+                oversold_level: 30.0,
+                overbought_level: 70.0,
+            },
+        );
 
         let mut history = History::new();
-        history.add_calculator(Box::new(RSI::new("rsi_14".to_string(), 14)));
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         for kline in generate_klines_with_prices(&prices) {
             history.insert(kline);
         }
 
-        let strategy = RSIStrategy::new("RSIOversold".to_string(), "rsi_14".to_string(), 70.0, 30.0);
         let signals = strategy.generate_signals(&history);
 
         assert_eq!(signals.len(), 1);
@@ -107,15 +130,22 @@ mod tests {
             // two consecutive rises intended to trigger a buy signal
             124.0, 120.0, 116.0,
         ];
+        let strategy = RSIStrategy::new(
+            "RSIOversold".to_string(),
+            RSIStrategyParams {
+                period: 14,
+                oversold_level: 30.0,
+                overbought_level: 70.0,
+            },
+        );
 
         let mut history = History::new();
-        history.add_calculator(Box::new(RSI::new("rsi_14".to_string(), 14)));
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         for kline in generate_klines_with_prices(&prices) {
             history.insert(kline);
         }
 
-        let strategy = RSIStrategy::new("RSIOversold".to_string(), "rsi_14".to_string(), 70.0, 30.0);
         let signals = strategy.generate_signals(&history);
 
         assert_eq!(signals.len(), 1);
@@ -130,14 +160,22 @@ mod tests {
             101.0,
         ];
 
+        let strategy = RSIStrategy::new(
+            "RSIOversold".to_string(),
+            RSIStrategyParams {
+                period: 14,
+                oversold_level: 30.0,
+                overbought_level: 70.0,
+            },
+        );
+
         let mut history = History::new();
-        history.add_calculator(Box::new(RSI::new("rsi_14".to_string(), 14)));
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         for kline in generate_klines_with_prices(&prices) {
             history.insert(kline);
         }
 
-        let strategy = RSIStrategy::new("RSIOversold".to_string(), "rsi_14".to_string(), 70.0, 30.0);
         let signals = strategy.generate_signals(&history);
 
         assert_eq!(signals.len(), 1);

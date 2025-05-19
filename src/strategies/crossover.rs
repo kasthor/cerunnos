@@ -1,4 +1,7 @@
-use crate::data_structures::signal::{Signal, SignalType};
+use crate::{
+    data_structures::signal::{Signal, SignalType},
+    indicators::IndicatorIdentifier,
+};
 
 use super::Strategy;
 
@@ -6,11 +9,11 @@ const LOOK_BACK: usize = 2;
 
 pub struct PriceCrossOverStrategy {
     name: String,
-    indicator: String,
+    indicator: IndicatorIdentifier,
 }
 
 impl PriceCrossOverStrategy {
-    pub fn new(name: String, indicator: String) -> Self {
+    pub fn new(name: String, indicator: IndicatorIdentifier) -> Self {
         Self { name, indicator }
     }
 
@@ -38,6 +41,10 @@ impl PriceCrossOverStrategy {
 impl Strategy for PriceCrossOverStrategy {
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn request_indicators(&self) -> Vec<IndicatorIdentifier> {
+        vec![self.indicator.clone()]
     }
 
     fn generate_signals(
@@ -76,7 +83,7 @@ impl Strategy for PriceCrossOverStrategy {
 mod tests {
     use crate::{
         data_structures::{history::History, kline::helpers::generate_klines_with_prices},
-        indicators::ema::EMA,
+        indicators::ema::{EMAParams, EMA},
     };
 
     use super::*;
@@ -85,8 +92,10 @@ mod tests {
     fn test_crossover_buy_signal() {
         let mut history = History::new();
 
-        let ema = EMA::new("ema_3".to_string(), 3);
-        history.add_calculator(Box::new(ema));
+        let indicator = IndicatorIdentifier::EMA(EMAParams { period: 3 });
+        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), indicator);
+
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         let prices = vec![100.0, 100.0, 100.0, 101.0];
         let klines = generate_klines_with_prices(&prices);
@@ -94,8 +103,6 @@ mod tests {
         for kline in klines {
             history.insert(kline);
         }
-
-        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), "ema_3".to_string());
 
         let signals = strategy.generate_signals(&history);
 
@@ -106,8 +113,10 @@ mod tests {
     fn test_crossover_sell_signal() {
         let mut history = History::new();
 
-        let ema = EMA::new("ema_3".to_string(), 3);
-        history.add_calculator(Box::new(ema));
+        let indicator = IndicatorIdentifier::EMA(EMAParams { period: 3 });
+        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), indicator);
+
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         let prices = vec![100.0, 100.0, 100.0, 99.0];
         let klines = generate_klines_with_prices(&prices);
@@ -115,8 +124,6 @@ mod tests {
         for kline in klines {
             history.insert(kline);
         }
-
-        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), "ema_3".to_string());
 
         let signals = strategy.generate_signals(&history);
 
@@ -127,8 +134,10 @@ mod tests {
     fn test_crossover_trend_up_hold_signal() {
         let mut history = History::new();
 
-        let ema = EMA::new("ema_3".to_string(), 3);
-        history.add_calculator(Box::new(ema));
+        let indicator = IndicatorIdentifier::EMA(EMAParams { period: 3 });
+        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), indicator);
+
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         let prices = vec![101.0, 102.0, 103.0, 104.0];
         let klines = generate_klines_with_prices(&prices);
@@ -136,8 +145,6 @@ mod tests {
         for kline in klines {
             history.insert(kline);
         }
-
-        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), "ema_3".to_string());
 
         let signals = strategy.generate_signals(&history);
 
@@ -148,8 +155,10 @@ mod tests {
     fn test_crossover_trend_down_hold_signal() {
         let mut history = History::new();
 
-        let ema = EMA::new("ema_3".to_string(), 3);
-        history.add_calculator(Box::new(ema));
+        let indicator = IndicatorIdentifier::EMA(EMAParams { period: 3 });
+        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), indicator);
+
+        history.request_calculators(strategy.request_indicators().as_slice());
 
         let prices = vec![104.0, 103.0, 102.0, 101.0];
         let klines = generate_klines_with_prices(&prices);
@@ -157,8 +166,6 @@ mod tests {
         for kline in klines {
             history.insert(kline);
         }
-
-        let strategy = PriceCrossOverStrategy::new("PriceCrossEMA".to_string(), "ema_3".to_string());
 
         let signals = strategy.generate_signals(&history);
 

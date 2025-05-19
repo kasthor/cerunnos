@@ -1,6 +1,7 @@
 use crate::data_structures::history::History;
 use crate::data_structures::kline::Kline;
-use crate::indicators::ema::{EMAParams, EMA};
+use crate::indicators::ema::EMAParams;
+use crate::indicators::IndicatorIdentifier;
 use crate::signal_processors::backtest::Backtest;
 use crate::signal_processors::SignalProcessor;
 use crate::source::{Result, Source};
@@ -30,13 +31,19 @@ impl Processor {
     pub fn new(source: Box<dyn Source>, signal_processors: Vec<Box<dyn SignalProcessor>>) -> Self {
         let mut strategies = Vec::new();
         let mut history = History::new();
+        let ema_20 = IndicatorIdentifier::EMA(EMAParams { period: 20 });
 
-        let ema = EMA::new("ema_20".to_string(), EMAParams { period: 20 });
-        history.add_calculator(Box::new(ema));
-
-        let price_ema_crossover = PriceCrossOverStrategy::new("EMAPriceCrossOver".to_string(), "ema_20".to_string());
+        let price_ema_crossover = PriceCrossOverStrategy::new("EMAPriceCrossOver".to_string(), ema_20.clone());
 
         strategies.push(Box::new(price_ema_crossover) as Box<dyn Strategy>);
+
+        history.request_calculators(
+            strategies
+                .iter()
+                .flat_map(|strategy| strategy.request_indicators())
+                .collect::<Vec<IndicatorIdentifier>>()
+                .as_slice(),
+        );
 
         Self {
             source,

@@ -4,7 +4,6 @@ mod message;
 mod source;
 pub mod stream;
 
-
 use std::error::Error;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync + 'static>>;
